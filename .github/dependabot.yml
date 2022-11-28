@@ -5,7 +5,21 @@
 
 version: 2
 updates:
+
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Add assignees
+    assignees:
+      - "Dids"
+
+  # Maintain dependencies for Go
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    # Add assignees
+    assignees:
+      - "Dids"
