@@ -1,0 +1,14 @@
+# Ignore everything by default
+*
+
+# Allow specific files and folders
+!/.gitignore
+!/.dockerignore
+!/Dockerfile*
+!/.env
+!/go.mod
+!/go.sum
+!/*.go
+!/**/*.go
+/vendor/
+!/.air.toml
