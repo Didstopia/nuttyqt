@@ -5,7 +5,7 @@ WORKDIR /app
 RUN go install github.com/cosmtrek/air@latest
 CMD ["air", "-c", ".air.toml"]
 COPY go.mod go.sum ./
-RUN go mod download
+RUN go mod download -mod=readonly
 COPY . .
 RUN go build -o nuttyqt .
 
