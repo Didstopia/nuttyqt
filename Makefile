@@ -20,3 +20,4 @@ dev:
 
 prod:
 	docker build -t didstopia/nuttyqt:latest .
+	docker run --rm -it didstopia/nuttyqt:latest
