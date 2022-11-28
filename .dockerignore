@@ -4,11 +4,12 @@
 # Allow specific files and folders
 !/.gitignore
 !/.dockerignore
-!/Dockerfile*
+!/.air.toml
 !/.env
 !/go.mod
 !/go.sum
 !/*.go
 !/**/*.go
-/vendor/
-!/.air.toml
+!/vendor/
+!/vendor/**/*
+!/Dockerfile*
