@@ -7,7 +7,20 @@ services:
       dockerfile: Dockerfile
     container_name: nuttyqt
     restart: unless-stopped
-    env_file: .env
+    environment:
+      - MQTT_BROKER_PROTOCOL=tcp
+      - MQTT_BROKER_HOST=mosquitto
+      - MQTT_BROKER_PORT=1883
+      - MQTT_CLIENT=nuttyqt_dev
+      - MQTT_TOPIC=nuttyqt_dev
+      - MQTT_USER=
+      - MQTT_PASS=
+      - NUT_SERVER=192.168.0.1
+      - NUT_PORT=3493
+      - NUT_USER=
+      - NUT_PASS=
+      - UPDATE_INTERVAL=5
+      - VERBOSE=true
     networks:
       - nuttyqt
 
