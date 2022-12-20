@@ -1,0 +1,35 @@
+services:
+
+  nuttyqt:
+    image: didstopia/nuttyqt:development
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nuttyqt
+    restart: unless-stopped
+    env_file: .env
+    networks:
+      - nuttyqt
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0.13
+    container_name: mosquitto
+    restart: unless-stopped
+    networks:
+      - nuttyqt
+    ports:
+      - 127.0.0.1:1883:1883
+      - 127.0.0.1:9001:9001
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto_logs:/mosquitto/log
+      - mosquitto_data:/mosquitto/data
+
+  ## TODO: Create a dummy NUT server for testing purposes
+
+networks:
+  nuttyqt:
+
+volumes:
+  mosquitto_logs:
+  mosquitto_data:

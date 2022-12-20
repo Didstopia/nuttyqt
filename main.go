@@ -184,6 +184,8 @@ func CreateMQTTClient() {
 	// TODO: Set up LWT (Last Will and Testament) message.
 	log.Debug("Setting up MQTT client ...")
 	opts := mqtt.NewClientOptions()
+	opts.SetConnectRetry(false)
+	opts.SetAutoReconnect(true)
 	opts.AddBroker(fmt.Sprintf("%s://%s:%d", config.MQTTBrokerProtocol, config.MQTTBrokerHost, config.MQTTBrokerPort))
 	opts.SetClientID(config.MQTTClient)
 	opts.SetDefaultPublishHandler(mqttMessageHandler)
@@ -196,7 +198,7 @@ func CreateMQTTClient() {
 	mqttClient = mqtt.NewClient(opts)
 
 	log.Info(fmt.Sprintf("Connecting to MQTT broker at %s://%s:%d ...", config.MQTTBrokerProtocol, config.MQTTBrokerHost, config.MQTTBrokerPort))
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+	if token := mqttClient.Connect(); token.WaitTimeout(5*time.Second) && token.Error() != nil {
 		log.Fatal("Failed to connect to MQTT broker: ", token.Error())
 	}
 }
@@ -236,21 +238,28 @@ func main() {
 // and sending the UPS device data to the MQTT broker.
 func Update() {
 	for {
-		// Get the UPS device.
-		log.Debug("Updating UPS device ...")
-		upsDevice = GetUPS()
+		if !mqttClient.IsConnected() || !mqttClient.IsConnectionOpen() {
+			log.Debug("MQTT client is not connected, skipping update ...")
+		} else {
+			// Get the UPS device.
+			log.Debug("Updating UPS device ...")
+			upsDevice = GetUPS()
 
-		// Serialize the UPS device to JSON.
-		log.Debug("Serializing UPS device to JSON ...")
-		upsDeviceJSON, jsonErr := json.Marshal(upsDevice)
-		if jsonErr != nil {
-			log.Fatal("Failed to serialize UPS device to JSON: ", jsonErr)
+			// Serialize the UPS device to JSON.
+			log.Debug("Serializing UPS device to JSON ...")
+			upsDeviceJSON, jsonErr := json.Marshal(upsDevice)
+			if jsonErr != nil {
+				log.Fatal("Failed to serialize UPS device to JSON: ", jsonErr)
+			}
+
+			// Send the data to the MQTT broker.
+			log.Debug("Sending data to MQTT broker ...")
+			mqttMessageToken := mqttClient.Publish(config.MQTTTopic, 0, false, upsDeviceJSON)
+			mqttMessageToken.WaitTimeout(5 * time.Second)
+			if mqttMessageToken.Error() != nil {
+				log.Fatal("Failed to send data to MQTT broker: ", mqttMessageToken.Error())
+			}
 		}
-
-		// Send the data to the MQTT broker.
-		log.Debug("Sending data to MQTT broker ...")
-		mqttMessageToken := mqttClient.Publish(config.MQTTTopic, 0, false, upsDeviceJSON)
-		mqttMessageToken.Wait()
 
 		// Wait 15 seconds before updating again.
 		log.Debug("Sleeping for ", config.UpdateInterval, " seconds ...")
