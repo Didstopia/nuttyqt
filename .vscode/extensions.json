@@ -1,5 +1,6 @@
 {
   "recommendations": [
-    "ms-vscode.go"
+    "ms-vscode.go",
+    "tamasfe.even-better-toml"
   ]
 }

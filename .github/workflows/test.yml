@@ -12,7 +12,7 @@ on:
 
 jobs:
   test:
-    name: Test
+    name: Run Tests
     runs-on: ubuntu-latest
     # permissions:
     #   actions: read
@@ -29,9 +29,15 @@ jobs:
           check-latest: true
           cache: true
 
-      - name: Install Dependencies
+      - name: Install Core Dependencies
         run: |
           go mod download
+
+      - name: Test Compilation
+        run: go build -v ./...
+
+      - name: Install Additional Dependencies
+        run: |
           go install -v github.com/fzipp/gocyclo/cmd/gocyclo@latest
           go install -v github.com/uudashr/gocognit/cmd/gocognit@latest
           go install -v github.com/client9/misspell/cmd/misspell@latest
@@ -76,33 +82,30 @@ jobs:
       ## TODO: gocyclo and gocognit seem like very similar tools, so do we actually need both of them?
       - name: Run Code Quality Checks
         run: |
+          # Check for cyclomatic complexity
           gocyclo -over 15 .
 
+          # Check for cognitive complexity
           gocognit .
           
+          ## TODO: This seems useless, considering we already lint above?
+          # Check for linting errors
           golint ./...
           
+          # Check for spelling errors (English only)
           misspell -error -locale US .
           
+          # Check for ineffectual assignments
           ineffassign .
           
+          # Check for unused imports
           go vet ./...
           
+          # Check for formatting errors
           gofmt -s -l .
           
+          # Check for import formatting errors
           goimports -l .
           
-          # Run all stable and non-opinionated checks:
+          # Check for code style errors
           gocritic check -enableAll -disable='#experimental,#opinionated' .
-          
-          # gocritic check-project .
-          # gocritic check-project --enable=dupArg .
-          # gocritic check-project --enable=dupBranchBody .
-          # gocritic check-project --enable=dupCase .
-          # gocritic check-project --enable=dupSubExpr .
-          # gocritic check-project --enable=emptyFallthrough .
-          # gocritic check-project --enable=emptyStringTest .
-          # gocritic check-project --enable=flagDeref .
-          # gocritic check-project --enable=ifElseChain .
-          # gocritic check-project --enable=loopAppend .
-          # gocritic check

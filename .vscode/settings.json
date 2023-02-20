@@ -5,5 +5,11 @@
   "[go]": {
     "editor.formatOnSave": true
   },
-  "git.ignoreLimitWarning": true
+  "git.ignoreLimitWarning": true,
+  "go.coverOnSave": true,
+  "go.diagnostic.vulncheck": "Imports",
+  "go.lintTool": "golangci-lint",
+  "go.survey.prompt": false,
+  "go.testOnSave": true,
+  "go.testTags": "-v ./..."
 }

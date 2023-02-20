@@ -1,6 +1,6 @@
 .tmp/
 
 .env*
-!.env.sample
+!.env.example
 
 /nuttyqt

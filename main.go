@@ -51,6 +51,9 @@ type Config struct {
 	// NUT password. Defaults to "".
 	NUTPass string
 
+	// NUT fake server should be started. Defaults to false.
+	NUTFake bool
+
 	// Update interval in seconds. Defaults to 60.
 	UpdateInterval int
 
@@ -72,6 +75,7 @@ var (
 		NUTServerPort: 3493,
 		NUTUser:       "",
 		NUTPass:       "",
+		NUTFake:       false,
 
 		UpdateInterval: 60,
 		Verbose:        false,
@@ -113,6 +117,7 @@ func LoadConfig() {
 	config.NUTServerPort, _ = strconv.Atoi(GetEnv("NUT_PORT", strconv.Itoa(config.NUTServerPort)))
 	config.NUTUser = GetEnv("NUT_USER", config.NUTUser)
 	config.NUTPass = GetEnv("NUT_PASS", config.NUTPass)
+	config.NUTFake, _ = strconv.ParseBool(GetEnv("NUT_FAKE", strconv.FormatBool(config.NUTFake)))
 
 	// Other
 	config.UpdateInterval, _ = strconv.Atoi(GetEnv("UPDATE_INTERVAL", strconv.Itoa(config.UpdateInterval)))
@@ -121,8 +126,8 @@ func LoadConfig() {
 
 // FIXME: Do we even need this at this point?!
 var mqttMessageHandler mqtt.MessageHandler = func(client mqtt.Client, msg mqtt.Message) {
-	log.Debug("TOPIC: %s\n", msg.Topic())
-	log.Debug("MSG: %s\n", msg.Payload())
+	log.Debug("TOPIC: ", msg.Topic())
+	log.Debug("MSG: ", msg.Payload())
 }
 
 // Get the UPS device from NUT.
@@ -162,6 +167,12 @@ func GetUPS() *nut.UPS {
 		log.Fatal("Failed to get a list of UPS devices: ", listErr)
 	}
 
+	// Print the list of UPS devices.
+	// log.Debug("List of UPS devices:")
+	// for _, ups := range upsList {
+	// 	log.Debug(fmt.Sprintf("%s", ups))
+	// }
+
 	// TODO: Return all UPS devices instead and send them all to MQTT?
 	// Return the first UPS in the list.
 	log.Debug("Return the first UPS device ...")
@@ -175,6 +186,8 @@ func CreateMQTTClient() {
 	//
 	// https://github.com/eclipse/paho.mqtt.golang/tree/master/cmd
 	//
+
+	// FIXME: How can we catch runtime errors from the mqtt library? Eg. "error triggered" messages that it handles internally..
 
 	// mqtt.DEBUG = log.New(os.Stdout, "", 0)
 	// mqtt.ERROR = log.New(os.Stdout, "", 0)
@@ -211,6 +224,14 @@ func main() {
 	log.Out = os.Stdout
 	if config.Verbose {
 		log.SetLevel(logrus.DebugLevel)
+	}
+
+	// Start the fake NUT server if enabled.
+	if config.NUTFake {
+		log.Info("Starting fake NUT server ...")
+		fakeNUTServer := NewFakeNUTServer()
+		go fakeNUTServer.Start()
+		defer fakeNUTServer.Stop()
 	}
 
 	// Create the MQTT client.

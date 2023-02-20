@@ -15,7 +15,7 @@
 #     -c <CONF>
 
 dev:
-	docker compose up; docker compose down;
+	docker compose up --build; docker compose down;
 # docker build --target=builder -t didstopia/nuttyqt:development .
 # docker run --rm -it -v $(PWD):/app:delegated -w /app didstopia/nuttyqt:development
 
