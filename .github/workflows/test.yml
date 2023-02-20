@@ -1,0 +1,108 @@
+## GitHub Actions workflow that runs tests on the Go project.
+
+name: Run Tests
+
+on:
+  push:
+    branches: [ 'master' ]
+  pull_request:
+    branches: [ 'master' ]
+  schedule:
+    - cron: '19 15 * * 4'
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    # permissions:
+    #   actions: read
+    #   contents: read
+    #   security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '>=1.19.0'
+          check-latest: true
+          cache: true
+
+      - name: Install Dependencies
+        run: |
+          go mod download
+          go install -v github.com/fzipp/gocyclo/cmd/gocyclo@latest
+          go install -v github.com/uudashr/gocognit/cmd/gocognit@latest
+          go install -v github.com/client9/misspell/cmd/misspell@latest
+          go install -v github.com/gordonklaus/ineffassign@latest
+          go install -v golang.org/x/tools/cmd/goimports@latest
+          go install -v github.com/go-critic/go-critic/cmd/gocritic@latest
+
+      - name: Run Tests
+        run: go test -v ./...
+
+      - name: Run Linter
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # version: v1.29
+          version: 'latest'
+
+      - name: Run Security Checks
+        uses: securego/gosec@master
+        with:
+          args: -quiet ./...
+        # run: |
+        #   gosec -quiet ./...
+        #   trivy fs --exit-code 1 --severity HIGH,CRITICAL --no-progress /github/workspace
+
+      - name: Run Vulnerability Scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '/github/workspace'
+          # image-ref: 'docker.io/my-organization/my-app:${{ github.sha }}'
+          # format: 'table'
+          exit-code: '1'
+          # ignore-unfixed: true
+          # vuln-type: 'os,library'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Run Code Coverage
+        run: |
+          go test -coverprofile=coverage.txt -covermode=atomic ./...
+          bash <(curl -s https://codecov.io/bash) -f coverage.txt
+
+      ## TODO: gocyclo and gocognit seem like very similar tools, so do we actually need both of them?
+      - name: Run Code Quality Checks
+        run: |
+          gocyclo -over 15 .
+
+          gocognit .
+          
+          golint ./...
+          
+          misspell -error -locale US .
+          
+          ineffassign .
+          
+          go vet ./...
+          
+          gofmt -s -l .
+          
+          goimports -l .
+          
+          # Run all stable and non-opinionated checks:
+          gocritic check -enableAll -disable='#experimental,#opinionated' .
+          
+          # gocritic check-project .
+          # gocritic check-project --enable=dupArg .
+          # gocritic check-project --enable=dupBranchBody .
+          # gocritic check-project --enable=dupCase .
+          # gocritic check-project --enable=dupSubExpr .
+          # gocritic check-project --enable=emptyFallthrough .
+          # gocritic check-project --enable=emptyStringTest .
+          # gocritic check-project --enable=flagDeref .
+          # gocritic check-project --enable=ifElseChain .
+          # gocritic check-project --enable=loopAppend .
+          # gocritic check

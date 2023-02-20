@@ -1,0 +1,39 @@
+name: Pull Request
+
+on: pull_request
+
+permissions:
+  pull-requests: write
+
+jobs:
+
+  # Auto-approve Dependabot pull requests
+  dependabot-auto-approve:
+    name: Dependabot Auto-Approve
+    runs-on: ubuntu-latest
+    if: ${{ github.actor == 'dependabot[bot]' }}
+    steps:
+      - name: Fetch Metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v1
+        with:
+          github-token: "${{ secrets.GITHUB_TOKEN }}"
+      - name: Approve PR
+        run: gh pr review --approve "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+  ## TODO: Re-enable once we have proper status checks (needs proper tests!)
+  # Auto-merge Dependabot pull requests
+  # dependabot-auto-merge:
+  #   name: Dependabot Auto-Merge
+  #   runs-on: ubuntu-latest
+  #   if: ${{ github.actor == 'dependabot[bot]' }}
+  #   steps:
+  #     - name: Merge PR
+  #       # if: ${{contains(steps.metadata.outputs.dependency-names, 'my-dependency') && steps.metadata.outputs.update-type == 'version-update:semver-patch'}}
+  #       run: gh pr merge --auto --merge "$PR_URL"
+  #       env:
+  #         PR_URL: ${{github.event.pull_request.html_url}}
+  #         GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
